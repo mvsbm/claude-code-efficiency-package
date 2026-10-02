@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "PreToolUse": [{"matcher": "Bash|Read", "hooks": [{"type": "command", "command": "@HOOK_COMMAND@", "timeout": 5}]}],
+    "PostToolUse": [{"matcher": "Bash|Read", "hooks": [{"type": "command", "command": "@HOOK_COMMAND@", "timeout": 5}]}],
+    "PostToolUseFailure": [{"matcher": "Bash|Read", "hooks": [{"type": "command", "command": "@HOOK_COMMAND@", "timeout": 5}]}],
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "@HOOK_COMMAND@", "timeout": 5}]}]
+  },
+  "statusLine": {"type": "command", "command": "@STATUS_COMMAND@"}
+}

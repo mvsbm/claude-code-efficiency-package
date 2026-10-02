@@ -1,0 +1,6 @@
+Optional revision-bound region replacement:
+For a LARGE function/block replacement where a patch would repeat much old code, combine necessary inspection with a handle: python3 /opt/claude-code-efficiency-package/operations.py region-read --file path --start FIRST_LINE --end LAST_LINE. It prints exact contents and a region_ID bound to the FULL file revision.
+Replace with only NEW code using python3 /opt/claude-code-efficiency-package/operations.py region-replace region_ID --replacement - --then-run 'known check' --timeout 120 <<'CODE'
+new region contents, preserving needed surrounding code/newlines
+CODE
+The helper preserves the original privately, rejects ANY revision drift, and never relocates an anchor. On stale handles reread only relevant context. Prefer existing small patches for tiny changes; do not acquire handles for every edit. Handle acquisition costs count too. Native permissions remain unchanged. One handle replaces exactly its displayed inclusive line range, including any displayed newline. No automatic source changes occur during inspection.

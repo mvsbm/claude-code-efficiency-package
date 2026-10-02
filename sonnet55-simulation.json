@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "kind": "hypothetical_repricing_not_actual_billing",
+  "model": "claude-sonnet-5-5",
+  "currency": "USD",
+  "pricing_unit_tokens": 1000000,
+  "rates": {
+    "input_tokens": "2.00",
+    "cache_read_input_tokens": "0.20",
+    "cache_creation_5m_input_tokens": "2.50",
+    "cache_creation_1h_input_tokens": "4.00",
+    "output_tokens": "10.00"
+  },
+  "pricing_sources": [
+    "https://platform.claude.com/docs/en/models/sonnet-5-5/overview",
+    "https://platform.claude.com/docs/en/about-claude/pricing"
+  ],
+  "verified_date": "2026-10-02",
+  "modifiers": {"batch": false, "geography": "global", "service_tier": "standard"},
+  "objective": "All modeled spend, including failures, divided by correctly completed timely tasks. Zero successes means undefined/ineligible. Incomplete usage cannot win.",
+  "local_trace_scenario": {
+    "tokenizer": "Use recorded Swift counts without retokenization; not Claude token counts",
+    "cache_reads": "Assume reported local prefix reuse can be repriced as Anthropic cache reads; eligibility/TTL/breakpoints not simulated",
+    "cache_creation": "Missing local cache-write categories may be explicitly assumed zero only in this named scenario; never recorded as measured zero",
+    "trajectory": "Local-model actions/correctness are not a prediction of Sonnet 5.5 behavior"
+  }
+}

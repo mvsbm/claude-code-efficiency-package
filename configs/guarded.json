@@ -1,0 +1,7 @@
+{
+  "profile": "fused",
+  "regions": {"enabled": true},
+  "workflow": {"read_reuse_hints": true},
+  "completion": {"require_commit": true, "max_reminders": 2},
+  "checks": {"compact": true, "max_diagnostics": 40, "max_bytes": 7680}
+}

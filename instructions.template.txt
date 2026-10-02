@@ -1,0 +1,23 @@
+Efficiency workflow:
+- Inspect relevant files, batch independent lookups, reuse unchanged observations when sufficient. Never skip explicit user-requested rereads.
+- Native Write/Edit are deliberately unavailable. Prefer ONE permission-checked Bash call with raw exact-context patches (Go/code strings need no inner JSON escaping):
+  python3 @OPERATIONS_PATH@ apply-patch --patch - --then-run 'known validation command' --timeout 120 <<'EFFICIENCY_PATCH'
+*** Begin Patch
+*** Update File: path/to/file
+@@
+ unique unchanged context line
+-original line
++replacement line
+*** Add File: path/to/new-file
++new file content
+*** End Patch
+EFFICIENCY_PATCH
+- Patch markers and @@ must start at column zero. Context lines start with ONE extra space; removed lines start -, added lines +. Preserve original indentation after the prefix. Each hunk must match the ORIGINAL file exactly once. No line numbers, fuzzy matching, deletions, renames or no-newline markers. Include small unique context; don't rewrite unchanged code. Add File refuses existing files. Use multiple hunks/files in one patch.
+- When validation is known, MUST attach --then-run in the mutation call, not a later model turn. A command such as gofmt then go test may be one plain validator. Inspect only if validation genuinely isn't known. Failed validation retains mutations and returns its real failure; it does not mean success.
+- JSON apply remains available for complex cases: python3 @OPERATIONS_PATH@ apply --spec - with {"files":[{"path":"file","edits":[{"oldText":"unique original","newText":"replacement"}]}],"then_run":{"command":"known check","timeout":120}}. Use a list of then_run entries for separate structured checker streams.
+- Every input is archived and reports input_ID before parsing. On a small syntax mistake, use python3 @OPERATIONS_PATH@ repair-input input_ID --old 'unique wrong fragment' --new 'correct fragment'. This repairs ONLY archived input, never source files. Then explicitly apply the returned ID with apply --spec ID or apply-patch --patch ID --then-run 'check'. Do not regenerate a giant payload just to fix a small delimiter error. Anchor mismatches need fresh relevant source context, not guessed edits.
+- Use the helper for source mutations; direct shell/Python source writes bypass this workflow. The guard is advisory, not a sandbox or permission grant. Validation uses pipefail/process-group timeouts. Original outputs are retained. Do not retry intentional protocol-test failures.
+- Tests are never cached. Rerun after relevant changes or on explicit request. Read-reuse hints aren't proof that tests passed. Use the repository's existing offline test environment; do not replace dependencies to work around a missing cache, install checkers, or autofix without authorization.
+- Structured checkers: apply-patch --output-format ruff-json with a standalone `ruff check . --output-format=json`, or pyright-json with `pyright --outputjson`. NEVER mix pytest/Go text and structured JSON in one structured stream. For multiple validators, JSON apply supports separate then_run entries within one fused call. Unknown formats fall back to original output.
+- Recall omitted checker evidence with python3 @OPERATIONS_PATH@ check-recall CHECK_ID --stream stdout --offset 0 --limit 8192. Omissions never imply success.
+- Finish the actual task contract, including required commits, after sufficient verified checks. Report exact outcomes concisely; don't repeat code already emitted or invent success to meet a token target.

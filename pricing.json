@@ -1,0 +1,10 @@
+{
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "checked": "2026-10-01",
+  "currency": "USD",
+  "basis": "Standard direct API list rates per million tokens; verify against billing. No automatic model aliases.",
+  "models": {
+    "claude-sonnet-5-5": {"input": 2, "write_5m": 2.5, "write_1h": 4, "read": 0.2, "output": 10},
+    "claude-opus-5-5": {"input": 4, "write_5m": 5, "write_1h": 8, "read": 0.2, "output": 20}
+  }
+}

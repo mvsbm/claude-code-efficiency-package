@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Claude Code Efficiency configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "default": 1,
+      "const": 1
+    },
+    "profile": {
+      "type": "string",
+      "default": "fused",
+      "enum": [
+        "fused",
+        "native",
+        "before"
+      ]
+    },
+    "regions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "read_reuse_hints": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_commit": {
+          "type": "boolean",
+          "default": false
+        },
+        "max_reminders": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 3
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "compact": {
+          "type": "boolean",
+          "default": true
+        },
+        "max_diagnostics": {
+          "type": "integer",
+          "default": 40,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "max_bytes": {
+          "type": "integer",
+          "default": 7680,
+          "minimum": 256,
+          "maximum": 65536
+        }
+      }
+    }
+  },
+  "description": "Partial overrides allowed. Permissions, evidence integrity and failure preservation are not configurable."
+}
