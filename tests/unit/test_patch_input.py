@@ -7,8 +7,8 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-import operations
-from patch_input import parse_patch
+from claude_code_efficiency import operations
+from claude_code_efficiency.patch_input import parse_patch
 
 class PatchTests(unittest.TestCase):
     def setUp(self):
@@ -17,7 +17,7 @@ class PatchTests(unittest.TestCase):
         self.file=self.root/'source.go';self.file.write_text('package test\n\nvar x = "old"\n')
     def tearDown(self):self.tmp.cleanup()
     def cli(self,*args,data=None):
-        return subprocess.run([sys.executable,operations.__file__,*args],input=data,text=True,capture_output=True,env=self.env)
+        return subprocess.run([sys.executable,'-m','claude_code_efficiency.operations',*args],input=data,text=True,capture_output=True,env=self.env)
     def diff(self):return f'*** Begin Patch\n*** Update File: {self.file}\n@@\n package test\n \n-var x = "old"\n+var x = "new"\n*** End Patch\n'
     def test_plain_code_no_json_escaping_and_validation(self):
         r=self.cli('apply-patch','--patch','-','--then-run',f'grep -q new {self.file}','--timeout','5',data=self.diff())
@@ -72,7 +72,7 @@ class PatchTests(unittest.TestCase):
             event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':f'cat > /app/source.{suffix} <<EOF\nx\nEOF'}}
             with patch.dict(os.environ,{'EFFICIENCY_PROFILE':'fused'}):self.assertEqual(operations.hook(event)['hookSpecificOutput']['permissionDecision'],'deny')
     def test_patch_command_is_allowed_by_workflow_guard(self):
-        event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':f'python3 {operations.__file__} apply-patch --patch - --then-run "go test"'}}
+        event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':'python3 -m claude_code_efficiency.operations apply-patch --patch - --then-run "go test"'}}
         with patch.dict(os.environ,{'EFFICIENCY_PROFILE':'fused'}):self.assertEqual(operations.hook(event),{})
 
 if __name__=='__main__':unittest.main()

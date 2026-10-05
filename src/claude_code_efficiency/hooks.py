@@ -9,8 +9,7 @@ import os
 from pathlib import Path
 import sys
 import time
-import operations
-import settings
+from . import operations, settings
 
 STATE=Path(os.environ.get('EFFICIENCY_STATE',str(Path.home()/'.local/state/claude-efficiency')))
 TEXT={'.py','.js','.ts','.tsx','.jsx','.md','.txt','.json','.yaml','.yml','.toml','.sh','.rs','.go','.c','.cpp','.h'}

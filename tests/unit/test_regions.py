@@ -1,11 +1,11 @@
 import json,os,re,subprocess,sys,tempfile,unittest
 from pathlib import Path
-import operations
+from claude_code_efficiency import operations
 class RegionTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name);self.file=self.root/'code.go';self.file.write_bytes('same\né\nsame\nlast'.encode());self.env={**os.environ,'EFFICIENCY_STATE':str(self.root/'state')}
  def tearDown(self):self.tmp.cleanup()
- def cli(self,*args,data=None):return subprocess.run([sys.executable,operations.__file__,*args],input=data,text=True,capture_output=True,env=self.env)
+ def cli(self,*args,data=None):return subprocess.run([sys.executable,'-m','claude_code_efficiency.operations',*args],input=data,text=True,capture_output=True,env=self.env)
  def read(self,start,end):
   r=self.cli('region-read','--file',str(self.file),'--start',str(start),'--end',str(end));self.assertEqual(r.returncode,0,r.stderr);return re.search(r'region_[a-f0-9]{24}',r.stdout).group()
  def replace(self,id,text,*args):return self.cli('region-replace',id,'--replacement','-',*args,data=text)

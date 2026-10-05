@@ -1,6 +1,6 @@
 import copy,json,tempfile,unittest
 from pathlib import Path
-import settings
+from claude_code_efficiency import settings
 
 class SettingsTests(unittest.TestCase):
  def load(self,value):

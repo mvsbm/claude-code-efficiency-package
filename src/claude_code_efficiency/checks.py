@@ -25,7 +25,7 @@ def inferred(command):
 
 def compact(raw,format,code,limit=None,max_bytes=None):
     """Strict parser: reject unknown/inconsistent data instead of hiding diagnostics."""
-    from settings import load
+    from .settings import load
     options=load()['checks']
     if limit is None:limit=options['max_diagnostics']
     if max_bytes is None:max_bytes=options['max_bytes']
@@ -91,7 +91,7 @@ def execute(command,timeout,format,root):
             child.wait();code=child.returncode;error=exc
     chosen=inferred(command) if format=='auto' else format
     reduced=None;fallback=None
-    from settings import load
+    from .settings import load
     if chosen!='plain' and error is None and load()['checks']['compact']:
         try:
             if (folder/'stdout').stat().st_size>MAX_PARSE:raise ValueError('Output exceeds safe parser size')
@@ -101,7 +101,7 @@ def execute(command,timeout,format,root):
     record={'id':ident,'command':command,'exit_code':code,'duration_seconds':time.monotonic()-start,'format':chosen,'compacted':reduced is not None,'fallback':fallback,'interrupted':error is not None,'streams':{name:{'bytes':(folder/name).stat().st_size,'sha256':digest(folder/name)} for name in ('stdout','stderr')}}
     if reduced is not None:(folder/'compact.txt').write_text(reduced)
     (folder/'manifest.json').write_text(json.dumps(record,indent=2))
-    print(f'[check_archive:{ident}] Full stdout/stderr preserved; recall with operations.py check-recall {ident} --stream stdout',flush=True)
+    print(f'[check_archive:{ident}] Full stdout/stderr preserved; recall with python3 -m claude_code_efficiency.operations check-recall {ident} --stream stdout',flush=True)
     if reduced is not None:print(reduced,end='',flush=True)
     else:emit(folder/'stdout',sys.stdout)
     emit(folder/'stderr',sys.stderr)

@@ -1,0 +1,5 @@
+include README.md LICENSE NVIDIA-LICENSE.txt
+recursive-include scripts *.py *.sh
+recursive-include config *.json
+recursive-include templates *.json *.txt
+recursive-include tests *.py

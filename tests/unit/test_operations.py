@@ -2,7 +2,7 @@ import io,json,os,subprocess,sys,tempfile,time,unittest
 from pathlib import Path
 from contextlib import redirect_stdout
 from unittest.mock import patch
-import operations as sol
+from claude_code_efficiency import operations as sol
 
 class MutationTests(unittest.TestCase):
  def setUp(self):
@@ -37,7 +37,7 @@ class MutationTests(unittest.TestCase):
   event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':'python3 -c "from pathlib import Path; Path(\'code.py\').write_text(\'x\')"'}}
   with patch.dict(os.environ,{'EFFICIENCY_PROFILE':'fused'}):self.assertEqual(sol.hook(event)['hookSpecificOutput']['permissionDecision'],'deny')
  def test_fused_profile_allows_helper(self):
-  event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':f'python3 {sol.__file__} apply --spec -'}}
+  event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':'python3 -m claude_code_efficiency.operations apply --spec -'}}
   with patch.dict(os.environ,{'EFFICIENCY_PROFILE':'fused'}):self.assertEqual(sol.hook(event),{})
  def test_fused_profile_allows_readonly_source_search(self):
   event={'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':"rg '.write_text(' code.py"}}
@@ -51,7 +51,7 @@ class MutationTests(unittest.TestCase):
  def test_concurrent_mutations_serialized_through_validation(self):
   a={'files':[{'path':str(self.file),'content':'A'}],'then_run':f'sleep 0.5; test "$(cat {self.file})" = A'}
   b={'files':[{'path':str(self.file),'content':'B'}],'then_run':f'test "$(cat {self.file})" = B'}
-  cmd=[sys.executable,sol.__file__,'apply','--spec','-']
+  cmd=[sys.executable,'-m','claude_code_efficiency.operations','apply','--spec','-']
   first=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
   first.stdin.write(json.dumps(a));first.stdin.close()
   for _ in range(100):

@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-import hooks
+from claude_code_efficiency import hooks
 
 class Tests(unittest.TestCase):
     def setUp(self):

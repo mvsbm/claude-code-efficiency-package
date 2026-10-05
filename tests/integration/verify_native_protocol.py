@@ -8,24 +8,22 @@ from pathlib import Path
 import subprocess
 import threading
 import time
-from accounting import analyze
+from claude_code_efficiency import accounting
+from claude_code_efficiency.regions import store
 
-ROOT=Path(__file__).resolve().parent
-HELPER=Path(os.environ.get('XDG_DATA_HOME',str(Path.home()/'.local/share')))/'claude-code-efficiency-package/operations.py'
-p=argparse.ArgumentParser();p.add_argument('--out',required=True);a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--out',required=True);p.add_argument('--launcher',type=Path,default=Path.home()/'.local/bin/claude-code-efficiency');a=p.parse_args()
 out=Path(a.out).resolve();out.mkdir(parents=True,exist_ok=True,mode=0o700)
 reports={}
 for format,grant in [('json',True),('json',False),('patch',True),('patch',False),('region',True),('region',False),('completion',True)]:
     case=out/(('granted' if grant else 'denied')+('_'+format if format!='json' else ''));case.mkdir();work=case/'workspace';work.mkdir();seen=[]
     spec={'files':[{'path':str(work/'fixed.py'),'content':'value = 42\n'}],'then_run':{'command':'test -f fixed.py && touch validated','timeout':5}}
-    command=f"python3 {HELPER} apply --spec - <<'EFFICIENCY_JSON'\n"+json.dumps(spec)+'\nEFFICIENCY_JSON'
+    command="python3 -m claude_code_efficiency.operations apply --spec - <<'EFFICIENCY_JSON'\n"+json.dumps(spec)+'\nEFFICIENCY_JSON'
     if format=='patch':
-        command=f"python3 {HELPER} apply-patch --patch - --then-run 'test -f fixed.py && touch validated' --timeout 5 <<'EFFICIENCY_PATCH'\n*** Begin Patch\n*** Add File: {work/'fixed.py'}\n+value = 42\n*** End Patch\nEFFICIENCY_PATCH"
+        command=f"python3 -m claude_code_efficiency.operations apply-patch --patch - --then-run 'test -f fixed.py && touch validated' --timeout 5 <<'EFFICIENCY_PATCH'\n*** Begin Patch\n*** Add File: {work/'fixed.py'}\n+value = 42\n*** End Patch\nEFFICIENCY_PATCH"
     if format=='region':
         (work/'fixed.py').write_text('value = 0\n')
-        from regions import store
         ident,_,_=store(case/'state/regions',work/'fixed.py',1,1)
-        command=f"python3 {HELPER} region-replace {ident} --replacement - --then-run 'test -f fixed.py && touch validated' --timeout 5 <<'CODE'\nvalue = 42\nCODE"
+        command=f"python3 -m claude_code_efficiency.operations region-replace {ident} --replacement - --then-run 'test -f fixed.py && touch validated' --timeout 5 <<'CODE'\nvalue = 42\nCODE"
     if format=='completion':
         for args in [('init','-q'),('config','user.name','Synthetic'),('config','user.email','synthetic@invalid')]:subprocess.run(['git','-C',str(work),*args],check=True)
         (work/'base.txt').write_text('base\n');subprocess.run(['git','-C',str(work),'add','.'],check=True);subprocess.run(['git','-C',str(work),'commit','-qm','base'],check=True)
@@ -49,17 +47,17 @@ for format,grant in [('json',True),('json',False),('patch',True),('patch',False)
     start=time.monotonic()
     try:
         with (case/'chat.stream.jsonl').open('w') as log,(case/'stderr').open('w') as err:
-            code=subprocess.run([str(Path.home()/'.local/bin/claude-code-efficiency'),'-p','--verbose','--output-format','stream-json','--no-session-persistence','--max-turns','4','--permission-mode','default','--allowedTools','Read,Glob,Grep,Bash' if grant else 'Read','--','Synthetic executor test. Execute only when permission allows. Stop if denied.'],cwd=work,env=env,stdout=log,stderr=err,timeout=20).returncode
+            code=subprocess.run([str(a.launcher),'-p','--verbose','--output-format','stream-json','--no-session-persistence','--max-turns','4','--permission-mode','default','--allowedTools','Read,Glob,Grep,Bash' if grant else 'Read','--','Synthetic executor test. Execute only when permission allows. Stop if denied.'],cwd=work,env=env,stdout=log,stderr=err,timeout=20).returncode
         tools={t['name'] for t in seen[0].get('tools',[])} if seen else set()
         fusion=sum(len(json.loads(f.read_text()).get('calls',{})) for f in (case/'state/live').glob('*.fusion.json'))
         reports[case.name]={'exit_code':code,'elapsed_seconds':time.monotonic()-start,'synthetic_usage_not_benchmark':True,'tools':sorted(tools),'fused_calls':fusion,'mutated':(work/'fixed.py').exists() and (work/'fixed.py').read_text()=='value = 42\n','validated':(work/'validated').exists(),'system_guidance_present':'Efficiency workflow:' in json.dumps(seen[0].get('system')) if seen else False}
         traces=list((case/'state').glob('api-*'))
-        accounting=analyze(traces[0],json.loads((ROOT/'pricing.json').read_text())) if len(traces)==1 else {'cost_complete':False,'issues':['Trace directory missing']}
-        accounting['synthetic']=True;(case/'SYNTHETIC_ACCOUNTING.json').write_text(json.dumps(accounting,indent=2))
-        reports[case.name]['native_accounting_complete']=accounting['cost_complete']
-        reports[case.name]['accounted_requests']=len(accounting.get('requests',[]))
-        reports[case.name]['accounting_issues']=accounting.get('issues')
+        usage=accounting.analyze(traces[0]) if len(traces)==1 else {'archive_consistent':False,'issues':['Trace directory missing']}
+        usage['synthetic']=True;(case/'SYNTHETIC_USAGE.json').write_text(json.dumps(usage,indent=2))
+        reports[case.name]['native_usage_capture_complete']=usage['archive_consistent']
+        reports[case.name]['captured_responses']=len(usage.get('requests',[]))
+        reports[case.name]['usage_issues']=usage.get('issues')
     finally:server.shutdown();server.server_close();thread.join(timeout=2)
 g,d=reports['granted'],reports['denied']
-checks={'native_palette_excludes_mutation_bypass':all('Write' not in r['tools'] and 'Edit' not in r['tools'] for r in reports.values()),'approved_bash_fuses_and_validates':g['mutated'] and g['validated'] and g['fused_calls']==1,'bash_denial_prevents_execution':not d['mutated'] and not d['validated'] and d['fused_calls']==0,'system_prompt_loaded':all(r['system_guidance_present'] for r in reports.values()),'native_usage_capture':all(r['native_accounting_complete'] and r['accounted_requests']==(4 if name=='granted_completion' else 2) for name,r in reports.items()),'approved_patch_fuses_and_validates':reports['granted_patch']['mutated'] and reports['granted_patch']['validated'] and reports['granted_patch']['fused_calls']==1,'patch_permission_denial_prevents_execution':not reports['denied_patch']['mutated'] and not reports['denied_patch']['validated'] and reports['denied_patch']['fused_calls']==0,'approved_region_fuses_and_validates':reports['granted_region']['mutated'] and reports['granted_region']['validated'] and reports['granted_region']['fused_calls']==1,'region_permission_denial_prevents_execution':not reports['denied_region']['mutated'] and not reports['denied_region']['validated'] and reports['denied_region']['fused_calls']==0,'completion_guard_blocks_then_allows_explicit_commit':reports['granted_completion']['accounted_requests']==4 and bool(list((out/'granted_completion/state/completion').glob('*.json'))) and subprocess.check_output(['git','-C',str(out/'granted_completion/workspace'),'status','--porcelain'],text=True)==''}
+checks={'native_palette_excludes_mutation_bypass':all('Write' not in r['tools'] and 'Edit' not in r['tools'] for r in reports.values()),'approved_bash_fuses_and_validates':g['mutated'] and g['validated'] and g['fused_calls']==1,'bash_denial_prevents_execution':not d['mutated'] and not d['validated'] and d['fused_calls']==0,'system_prompt_loaded':all(r['system_guidance_present'] for r in reports.values()),'native_usage_capture':all(r['native_usage_capture_complete'] and r['captured_responses']==(4 if name=='granted_completion' else 2) for name,r in reports.items()),'approved_patch_fuses_and_validates':reports['granted_patch']['mutated'] and reports['granted_patch']['validated'] and reports['granted_patch']['fused_calls']==1,'patch_permission_denial_prevents_execution':not reports['denied_patch']['mutated'] and not reports['denied_patch']['validated'] and reports['denied_patch']['fused_calls']==0,'approved_region_fuses_and_validates':reports['granted_region']['mutated'] and reports['granted_region']['validated'] and reports['granted_region']['fused_calls']==1,'region_permission_denial_prevents_execution':not reports['denied_region']['mutated'] and not reports['denied_region']['validated'] and reports['denied_region']['fused_calls']==0,'completion_guard_blocks_then_allows_explicit_commit':reports['granted_completion']['captured_responses']==4 and bool(list((out/'granted_completion/state/completion').glob('*.json'))) and subprocess.check_output(['git','-C',str(out/'granted_completion/workspace'),'status','--porcelain'],text=True)==''}
 report={'checks':checks,'cases':reports};(out/'REPORT.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2));raise SystemExit(0 if all(checks.values()) else 1)

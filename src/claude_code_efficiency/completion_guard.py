@@ -2,7 +2,7 @@
 """Opt-in bounded Stop reminder for an explicitly required commit. Never mutates Git."""
 import fcntl,hashlib,json,os,subprocess,sys
 from pathlib import Path
-import settings
+from . import settings
 
 def evaluate(event,env=None):
  env=os.environ if env is None else env

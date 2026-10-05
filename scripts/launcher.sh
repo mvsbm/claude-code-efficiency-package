@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/claude-code-efficiency-package"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export EFFICIENCY_STATE="${EFFICIENCY_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/claude-code-efficiency-package}"
 if [[ -n "${EFFICIENCY_CONFIG:-}" ]]; then
   mkdir -p -m 700 "$EFFICIENCY_STATE"
   CONFIG_SNAPSHOT=$(mktemp "$EFFICIENCY_STATE/config-XXXXXX.json")
-  python3 "$ROOT/settings.py" --config "$EFFICIENCY_CONFIG" --flat > "$CONFIG_SNAPSHOT"
+  python3 -m claude_code_efficiency.settings --config "$EFFICIENCY_CONFIG" --flat > "$CONFIG_SNAPSHOT"
   export EFFICIENCY_CONFIG="$CONFIG_SNAPSHOT"
-  CONFIG_ENV=$(python3 "$ROOT/settings.py" --config "$EFFICIENCY_CONFIG" --export)
+  CONFIG_ENV=$(python3 -m claude_code_efficiency.settings --config "$EFFICIENCY_CONFIG" --export)
   while IFS='=' read -r key value; do
     [[ -v "$key" ]] || export "$key=$value"
   done <<< "$CONFIG_ENV"
@@ -28,7 +29,7 @@ fi
 # Opt-in full conversation logging; local files only, never an API proxy.
 if [[ "${EFFICIENCY_ACCOUNTING:-0}" == 1 ]]; then
   if [[ "${EFFICIENCY_ACCOUNTING_SYNTHETIC:-0}" != 1 ]] && { [[ "${ANTHROPIC_BASE_URL:-https://api.anthropic.com}" != https://api.anthropic.com && "${ANTHROPIC_BASE_URL:-}" != https://api.anthropic.com/ ]] || [[ "${CLAUDE_CODE_USE_BEDROCK:-0}" == 1 || "${CLAUDE_CODE_USE_VERTEX:-0}" == 1 || "${CLAUDE_CODE_USE_FOUNDRY:-0}" == 1 ]]; }; then
-    echo 'Cost accounting requires the direct Anthropic endpoint; no gateway prices are assumed.' >&2; exit 2
+    echo 'Usage capture requires the direct Anthropic endpoint; other providers are not supported.' >&2; exit 2
   fi
   mkdir -p -m 700 "$EFFICIENCY_STATE"
   TRACE_DIR=$(mktemp -d "$EFFICIENCY_STATE/api-XXXXXXXX")

@@ -7,8 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
-import checks
-import operations
+from claude_code_efficiency import checks, operations
 
 class Tests(unittest.TestCase):
     def setUp(self):

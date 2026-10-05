@@ -1,6 +1,6 @@
 import json,subprocess,tempfile,unittest
 from pathlib import Path
-from completion_guard import evaluate
+from claude_code_efficiency.completion_guard import evaluate
 class CompletionTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name);self.repo=self.root/'repo';self.repo.mkdir()

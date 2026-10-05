@@ -17,10 +17,8 @@ import subprocess
 import sys
 import time
 import uuid
-import checks
-from patch_input import parse_patch
-import regions
-import settings
+from . import checks, regions, settings
+from .patch_input import parse_patch
 
 ARCHIVES=Path(os.environ.get('SOL_ARCHIVE_DIR',str(Path.home()/'.local/state/claude-efficiency/archives'))).resolve()
 STATS=Path(os.environ.get('SOL_STATS_DIR',str(Path.home()/'.local/state/claude-efficiency/live'))).resolve()
@@ -31,7 +29,9 @@ CHECKS=STATE/'checks'
 def is_apply(command):
     try:words=shlex.split(command.splitlines()[0])
     except (ValueError,IndexError):return False
-    return any(words[i]==str(Path(__file__).resolve()) and words[i+1] in ('apply','apply-patch','repair-input','region-replace') for i in range(len(words)-1))
+    actions=('apply','apply-patch','repair-input','region-replace')
+    targets=(str(Path(__file__).resolve()),'claude_code_efficiency.operations')
+    return any(words[i] in targets and words[i+1] in actions for i in range(len(words)-1))
 
 def hook(event):
     if event.get('tool_name')!='Bash':return {}
@@ -48,7 +48,7 @@ def hook(event):
         # Guidance enforcement, not a shell sandbox: catch obvious mutation bypasses.
         rules=[r'\.(?:write_text|write_bytes)\s*\(',r'\b(?:sed|perl)\s+[^\n;]*\s-i\b',r'\b(?:sed|perl)\s+-i\b',r'\btee\s+(?:-a\s+)?[^\n;]*\.(?:py|md|ts|tsx|js|jsx|json|yaml|yml|go|rs|c|cpp|h|sh|toml)\b',r'(?<![<>])>{1,2}\s*[\"\']?[^\s;|<>]+\.(?:py|md|ts|tsx|js|jsx|json|yaml|yml|go|rs|c|cpp|h|sh|toml)\b',r'\bopen\([^\n]*,[\s]*[\"\'][wax]']
         if any(re.search(rule,command) for rule in rules):
-            return {'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':f'Action Fusion profile: use python3 {shlex.quote(str(Path(__file__).resolve()))} apply-patch --patch - --then-run "known check" with a raw *** Begin Patch / *** End Patch heredoc in ONE Bash call. JSON apply --spec - is also supported. Direct source-file writes bypass fused validation. This is a workflow constraint, not a permission grant.'}}
+            return {'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'deny','permissionDecisionReason':'Action Fusion profile: use python3 -m claude_code_efficiency.operations apply-patch --patch - --then-run "known check" with a raw *** Begin Patch / *** End Patch heredoc in ONE Bash call. JSON apply --spec - is also supported. Direct source-file writes bypass fused validation. This is a workflow constraint, not a permission grant.'}}
         return {}
     if event.get('hook_event_name') not in ('PostToolUse','PostToolUseFailure'):return {}
     session=event.get('session_id','unknown')

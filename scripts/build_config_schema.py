@@ -2,7 +2,11 @@
 """Generate the partial-override JSON Schema from the runtime validator."""
 import json
 from pathlib import Path
-import settings
+import sys
+
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'src'))
+from claude_code_efficiency import settings
 
 def schema(value,prefix=''):
  if isinstance(value,dict):return {'type':'object','additionalProperties':False,'properties':{k:schema(v,prefix+k+'.') for k,v in value.items()}}
@@ -14,4 +18,4 @@ def schema(value,prefix=''):
  return result
 if __name__=='__main__':
  result={'$schema':'https://json-schema.org/draft/2020-12/schema','title':'Claude Code Efficiency configuration v1',**schema(settings.DEFAULTS),'description':'Partial overrides allowed. Permissions, evidence integrity and failure preservation are not configurable.'}
- Path(__file__).with_name('config.schema.json').write_text(json.dumps(result,indent=2)+'\n')
+ (ROOT/'config'/'schema.json').write_text(json.dumps(result,indent=2)+'\n')
