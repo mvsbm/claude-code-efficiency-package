@@ -27,33 +27,6 @@ CLAUDE_BIN="$(command -v claude)" # Or point to one pinned fresh CLI install; us
 
 The package launcher supports `EFFICIENCY_PROFILE=before` (control: bypass package hooks/guidance) and `EFFICIENCY_PROFILE=fused` (treatment). Use the **same Claude Code executable, model, task prompt, limits, and fresh workspace snapshot** in both arms.
 
-## Local llamAmpere model
-
-The installed local model is `Swift-1.5-Qwen3.8-27B-Q4_K_M`, served by the existing `swift15-ark.service` at `http://127.0.0.1:8082`. First check the service and model without generating:
-
-```bash
-systemctl --user is-active swift15-ark.service
-curl -fsS --max-time 3 http://127.0.0.1:8082/health
-curl -fsS --max-time 3 http://127.0.0.1:8082/v1/models
-```
-
-Do not restart or stop an active model service without checking with the user; another session may be using it. Use only loopback for this experiment and override any inherited OpenRouter/remote endpoint and credentials with local dummy credentials. Never print or log actual API keys.
-
-**Known handshake issue (2026-10-05):** llama.cpp build `0.4.1-dev` (commit `2cb169`) is active and its `/v1/messages/count_tokens` endpoint works. A direct short streaming `/v1/messages` request began returning Anthropic-style events. However, fresh Claude Code `2.1.289` attempts using the exact served model ID, including `ANTHROPIC_MODEL` and `ANTHROPIC_CUSTOM_MODEL_OPTION`, timed out with `unrecognized_model`. Thus the server being healthy does not yet prove Claude Code can use it. Before any benchmark, resolve this model-ID/protocol mismatch with a **single short handshake** (30-second timeout, no session persistence); if it still fails, stop and report the error rather than retrying long prompts. Do not claim token savings until Claude Code itself completes the handshake and a task.
-
-Example environment for the local endpoint (use the temporary config and CLI binary):
-
-```bash
-export ANTHROPIC_BASE_URL=http://127.0.0.1:8082
-export ANTHROPIC_API_KEY=local
-export ANTHROPIC_AUTH_TOKEN=local
-export ANTHROPIC_MODEL=Swift-1.5-Qwen3.8-27B-Q4_K_M
-export ANTHROPIC_CUSTOM_MODEL_OPTION="$ANTHROPIC_MODEL"
-export ANTHROPIC_CUSTOM_MODEL_OPTION_NAME='Local Swift Qwen'
-export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-```
-
-Confirm the endpoint is still loopback before every run. Local model use should not generate a remote API bill.
 
 ## Paired token-usage test
 
